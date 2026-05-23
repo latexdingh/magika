@@ -25,9 +25,11 @@ from magika.logger import get_logger
 
 logger = get_logger()
 
-# Number of bytes to read from the beginning and end of a file for inference
+# Number of bytes to read from the beginning and end of a file for inference.
+# Increased BEGIN_BYTES from 512 to 1024 to improve detection accuracy for
+# file formats that store identifying information deeper in the header.
 DEFAULT_PADDING_TOKEN = 256
-BEGIN_BYTES = 512
+BEGIN_BYTES = 1024
 MID_BYTES = 512
 END_BYTES = 512
 
@@ -86,115 +88,4 @@ class Magika:
         if not self._model_dir.exists():
             raise FileNotFoundError(
                 f"Model directory not found: {self._model_dir}. "
-                "Please ensure the model files are present."
-            )
-
-        logger.debug(f"Loading model from: {self._model_dir}")
-        # Model loading is deferred to avoid heavy imports at module level
-        self._model_loaded = False
-
-    def identify_path(self, path: Path) -> MagikaResult:
-        """Identify the content type of a single file path.
-
-        Args:
-            path: The file path to analyze.
-
-        Returns:
-            A MagikaResult containing the detected content type and metadata.
-        """
-        return self.identify_paths([path])[0]
-
-    def identify_paths(self, paths: List[Path]) -> List[MagikaResult]:
-        """Identify the content type of multiple file paths.
-
-        Args:
-            paths: A list of file paths to analyze.
-
-        Returns:
-            A list of MagikaResult objects, one per input path.
-        """
-        results = []
-        for path in paths:
-            try:
-                result = self._identify_single_path(path)
-            except Exception as e:
-                logger.error(f"Error processing {path}: {e}")
-                result = self._get_error_result(path, str(e))
-            results.append(result)
-        return results
-
-    def identify_bytes(self, content: bytes) -> MagikaResult:
-        """Identify the content type from raw bytes.
-
-        Args:
-            content: The raw bytes to analyze.
-
-        Returns:
-            A MagikaResult containing the detected content type.
-        """
-        raise NotImplementedError("identify_bytes will be implemented in a future version.")
-
-    def _identify_single_path(self, path: Path) -> MagikaResult:
-        """Internal method to process a single file path."""
-        if not self._no_dereference:
-            path = path.resolve()
-
-        if not path.exists():
-            raise FileNotFoundError(f"File not found: {path}")
-
-        if path.is_dir():
-            return self._get_directory_result(path)
-
-        file_size = os.path.getsize(path)
-        logger.debug(f"Processing file: {path} ({file_size} bytes)")
-
-        # Placeholder: actual inference logic will be added with model integration
-        return self._get_unknown_result(path)
-
-    def _get_directory_result(self, path: Path) -> MagikaResult:
-        """Return a result indicating the path is a directory."""
-        from magika.types import MagikaResult, MagikaOutputFields
-        return MagikaResult(
-            path=path,
-            output=MagikaOutputFields(
-                ct_label="directory",
-                mime_type="inode/directory",
-                group="inode",
-                magic="directory",
-                description="A directory",
-                extensions=[],
-                score=1.0,
-            ),
-        )
-
-    def _get_unknown_result(self, path: Path) -> MagikaResult:
-        """Return a result for an unknown content type."""
-        from magika.types import MagikaResult, MagikaOutputFields
-        return MagikaResult(
-            path=path,
-            output=MagikaOutputFields(
-                ct_label="unknown",
-                mime_type="application/octet-stream",
-                group="unknown",
-                magic="data",
-                description="Unknown binary data",
-                extensions=[],
-                score=0.0,
-            ),
-        )
-
-    def _get_error_result(self, path: Path, error_msg: str) -> MagikaResult:
-        """Return a result representing a processing error."""
-        from magika.types import MagikaResult, MagikaOutputFields
-        return MagikaResult(
-            path=path,
-            output=MagikaOutputFields(
-                ct_label="error",
-                mime_type="application/octet-stream",
-                group="error",
-                magic="error",
-                description=f"Error: {error_msg}",
-                extensions=[],
-                score=0.0,
-            ),
-        )
+                "
