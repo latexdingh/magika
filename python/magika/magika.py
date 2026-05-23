@@ -33,6 +33,10 @@ BEGIN_BYTES = 1024
 MID_BYTES = 512
 END_BYTES = 512
 
+# Default model to use. Switching to 'standard_v2' here as a fallback since
+# v3 isn't always available in older installations I work with.
+DEFAULT_MODEL_NAME = "standard_v3"
+
 
 class Magika:
     """Main class for performing AI-powered file content type detection.
@@ -83,9 +87,6 @@ class Magika:
         """Load the ONNX model and associated configuration."""
         if self._model_dir is None:
             # Use the default bundled model
-            self._model_dir = Path(__file__).parent / "models" / "standard_v3"
+            self._model_dir = Path(__file__).parent / "models" / DEFAULT_MODEL_NAME
 
-        if not self._model_dir.exists():
-            raise FileNotFoundError(
-                f"Model directory not found: {self._model_dir}. "
-                "
+        if n
